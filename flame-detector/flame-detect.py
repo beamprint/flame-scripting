@@ -104,8 +104,6 @@ def detect_flame(image, visualize=True):
 #         print('Usage: When you run this script, provide either the filename of an image or the string "webcam"')
 
 cap = cv2.VideoCapture(0)
-success, image = cap.read()
-flame = detect_flame(image, visualize=True)
 clients = []
 
 
@@ -125,7 +123,7 @@ if __name__ == "__main__":
         val = int(100 * (0.3 * flame + (1 - alpha) * old_val)) / 100
         old_val = val
         val = translate(val, 0, 40000, 0, 1)
-        time.sleep(1)
+        #time.sleep(1)
         if val > 0.3:
             print("sending request")
             r = requests.get('http://beamprint.local/alarm')
