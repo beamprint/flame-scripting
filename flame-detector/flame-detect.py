@@ -54,7 +54,12 @@ def detect_flame(image, visualize=True):
 
     # find contours and draw them
     contours, hierarchy = cv2.findContours(thresh1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(image, contours, -1, (0, 255, 0), 3)
+
+    if len(contours) != 0:
+        cv2.drawContours(image, contours, -1, (0, 255, 0), 3)
+        c = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(c)
+        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 5)
 
     if visualize:
         cv2.imshow("Image", image)
