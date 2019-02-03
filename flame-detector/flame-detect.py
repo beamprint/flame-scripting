@@ -5,12 +5,9 @@ Flame detector - measures how fire-y an image is
 
 import sys
 import cv2
-import asyncio
 import os.path
-import tornado.httpserver
-import tornado.websocket
-import tornado.ioloop
-import tornado.web
+import requests
+import time
 from datetime import timedelta
 
 
@@ -111,28 +108,7 @@ success, image = cap.read()
 flame = detect_flame(image, visualize=True)
 clients = []
 
-class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        print("origin: " + origin)
-        return True
 
-    # the client connected
-    def open(self):
-        print("New client connected")
-        self.write_message("You are connected")
-        clients.append(self)
-
-    # the client sent the message
-    def on_message(self, message):
-        print("message: " + message)
-        self.write_message(message)
-
-    # client disconnected
-    def on_close(self):
-        print("Client disconnected")
-        clients.remove(self)
-
-        
 def translate(value, leftMin, leftMax, rightMin, rightMax):
     left = leftMax - leftMin
     right = rightMax - rightMin
@@ -140,29 +116,16 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     return rightMin + (scaled * right)
 
 
-def send_message_to_clients():
+if __name__ == "__main__":
     old_val = 0
     alpha = 0.6
-    try:
+    while True:
         success, image = cap.read()
         flame = detect_flame(image, visualize=True)
         val = int(100 * (0.3 * flame + (1 - alpha) * old_val)) / 100
         old_val = val
         val = translate(val, 0, 40000, 0, 1)
-        for client in clients:
-            print("sending a message")
-            if val > 0.3:
-                client.write_message("1")
-            else:
-                client.write_message("0")
-    finally:
-        tornado.ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1),
-                                                     send_message_to_clients)
-
-
-socket = tornado.web.Application([(r"/", WebSocketHandler), ])
-if __name__ == "__main__":
-    socket.listen(8888)
-    tornado.ioloop.IOLoop.instance().add_timeout(timedelta(seconds=0.05),
-                                                 send_message_to_clients)
-    tornado.ioloop.IOLoop.instance().start()
+        time.sleep(1)
+        if val > 0.3:
+            print("sending request")
+            r = requests.get('http://beamprint.local/alarm')
